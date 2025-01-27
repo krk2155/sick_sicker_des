@@ -17,8 +17,9 @@
 
 library(simmer)
 
-source('inputs.R')     # Your Model Parameters
-source('main_loop.R')  # Boilerplate code
+source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/inputs.R')     # Your Model Parameters
+source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/main_loop.R')  # Boilerplate code
+source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/event_death.R')  # Death event
   
 # Resource or "Counters"
 #
@@ -54,14 +55,23 @@ terminate_simulation <- function(traj, inputs)
         )
 }
 
+
+
 # Main Event registry
 event_registry <- list(
   list(name          = "Terminate at time horizon",
        attr          = "aTerminate",
        time_to_event = function(inputs) inputs$horizon,
        func          = terminate_simulation,
-       reactive      = FALSE)
-)
+       reactive      = (FALSE)),
+  list(name          = "Time to Death",
+       attr          = "aDeath",
+       time_to_event = function(inputs) years_till_death(inputs),
+       func          = terminate_simulation,
+       reactive      = (FALSE)
+       )
+       )
+       
 
 # This does a single DES run versus the defined inputs.
 des_run <- function(inputs)
@@ -77,4 +87,6 @@ des_run <- function(inputs)
   get_mon_arrivals(env, per_resource = T)
 }
 
+set.seed(123)
+des_run(inputs)
 
