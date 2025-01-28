@@ -68,7 +68,7 @@ next_event <- function()
   for(i in 1:length(event_registry))
   {
     e <- event_registry[[i]]
-    tmp_time   <- get_attribute(env,e$attr)
+    tmp_time   <- get_attribute(env, e$attr)
     if(tmp_time < event_time)
     {
       event      <- e
@@ -87,7 +87,7 @@ process_events <- function(traj, env, inputs)
   traj <- timeout(traj, function()
   {
     # Determine next up
-    ne <- next_event()
+    ne         <- next_event()
     event      <- ne[['event']]
     event_time <- ne[['event_time']]
     
@@ -109,7 +109,7 @@ process_events <- function(traj, env, inputs)
   args <- lapply(event_registry,FUN=function(e) {
     #print(e$name)   # Good for debugging event loading
     trajectory(e$name) |>
-      e$func(inputs) |>
+        e$func(inputs) |>
       set_attribute(e$attr, function() {now(env)+e$time_to_event(inputs)})
   })
   args$".trj"    <- traj

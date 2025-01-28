@@ -27,7 +27,7 @@ source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/e
 # things of which a count might be of interest.
 # Infinite in quantity
 counters <- c(
-  "time_in_model"
+  "time_in_model", "death"
 )
   
 # Define starting state of patient
@@ -61,13 +61,13 @@ terminate_simulation <- function(traj, inputs)
 event_registry <- list(
   list(name          = "Terminate at time horizon",
        attr          = "aTerminate",
-       time_to_event = function(inputs) inputs$horizon,
+       time_to_event = function(inputs) inputs$horizon-now(env),
        func          = terminate_simulation,
        reactive      = (FALSE)),
   list(name          = "Time to Death",
        attr          = "aDeath",
        time_to_event = function(inputs) years_till_death(inputs),
-       func          = terminate_simulation,
+       func          = death,
        reactive      = (FALSE)
        )
        )
@@ -87,6 +87,5 @@ des_run <- function(inputs)
   get_mon_arrivals(env, per_resource = T)
 }
 
-set.seed(123)
-des_run(inputs)
 
+des_run(inputs)

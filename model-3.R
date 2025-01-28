@@ -1,3 +1,5 @@
+# Model 3 consists of healthy -> sick1 -> sick2 -> dead  
+# + time in model
   #############################################################################
  #
 #
@@ -13,10 +15,6 @@
 #
 ###############################################################################
 
-# This is an empty model with nothing but entry/exit of a patient trajectory
-
-library(simmer)
-
 source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/discount.R')
 source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/inputs.R')     # Your Model Parameters
 source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/main_loop.R')  # Boilerplate code
@@ -28,7 +26,7 @@ source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/e
 # things of which a count might be of interest.
 # Infinite in quantity
 counters <- c(
-  "time_in_model", "death"
+  "time_in_model", "death", "Healthy","Sick1","Sick2"
 )
   
 # Define starting state of patient
@@ -68,7 +66,26 @@ event_registry <- list(
        time_to_event = function(inputs) years_till_death(inputs),
        func          = death,
        reactive      = (FALSE)
-       )
+       ),
+    list(name          = "Healthy to Sick1",
+       attr          = "aHealthyToSick1",
+       time_to_event = function(inputs) inputs$healthy_to_sick1,
+       func          = healthy_to_sick1,
+       reactive      = (TRUE)
+       ),
+    list(name          = "Sick1 to Sick2",
+         attr          = "aSick1ToSick2",
+         time_to_event = function(inputs) inputs$sick1_to_sick2,
+         func          = sick1_to_sick2,
+         reactive      = (TRUE)
+         ),
+    list(name          = "Sick2 to Death",
+            attr          = "aSick2ToDeath",
+            time_to_event = function(inputs) inputs$sick2_to_death,
+            func          = sick2_to_death,
+            reactive      = (TRUE)
+            )
+    
 )
        
 
