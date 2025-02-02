@@ -28,7 +28,7 @@ inputs <- list(
     r.HS1  =     0.15,   # Disease Onset Rate / year       (H  -> S1)
     r.S1H  =     0.7,    # Recovery Rate / year            (S1 -> H)
     r.S1S2 =     0.10,   # Disease Progression rate / year (S1 -> S2)
-    r.HD   =     0.5,  # Healthy to Dead rate / year     (H  -> D)
+    r.HD   =     0.005,  # Healthy to Dead rate / year     (H  -> D)
     hr.S1D =     3,      # Hazard ratio in S1 vs healthy 
     hr.S2D =    10,      # Hazard ratio in S2 vs healthy
     hr.cor =     2,      # Hazard ratio of a condition giving the other condition.

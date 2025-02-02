@@ -1,5 +1,5 @@
-# Model 4 
-# Objective: A DES model that now adds the Sick State transition
+# Model 5
+# Objective: Add Sick1 -> Healthy transition
 #############################################################################
 #
 #
@@ -73,7 +73,7 @@ event_registry <- list(
        reactive      = (FALSE)),
   list(name          = "Time to Death",
        attr          = "aDeath",
-       time_to_event = function(inputs) years_till_death(inputs),
+       time_to_event = years_till_death,
        func          = death,
        reactive      = (TRUE)
        ),
@@ -154,8 +154,7 @@ des_run <- function(inputs)
     qaly_arrivals(inputs) 
 }
 
-set.seed(3)
-source('model-5.R')
+set.seed(4)
 results <- des_run(inputs)
 results
 individual_arrivals <- function(arrivals, individual_id) {
@@ -168,3 +167,4 @@ individual_arrivals(results, individual_id)
 
 pn <- sample(results[results$resource=='death','name'],1)
 results[results$name == pn, ]
+
