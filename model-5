@@ -1,7 +1,7 @@
-# Model 3 consists of healthy -> sick1 -> sick2 -> dead  
-# + time in model
-  #############################################################################
- #
+# Model 4 
+# Objective: A DES model that now adds the Sick State transition
+#############################################################################
+#
 #
 # Copyright 2015, 2025 Shawn Garbett, Vanderbilt University Medical Center
 #
@@ -26,7 +26,7 @@ source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/e
 # things of which a count might be of interest.
 # Infinite in quantity
 counters <- c(
-  "time_in_model", "death"
+  "time_in_model", "death", "healthy","sick1"
 )
   
 # Define starting state of patient
@@ -34,7 +34,9 @@ initialize_patient <- function(traj, inputs)
 {
   traj                   |>
   seize("time_in_model") |>
-  set_attribute("AgeInitial", function() sample(20:30, 1))
+  set_attribute("AgeInitial", function() sample(20:30, 1)) |>
+  set_attribute("State", 0) |> # Patients start healthy
+  seize("healthy") 
 }
 
 # Cleanup function if a termination occurs
@@ -42,7 +44,14 @@ initialize_patient <- function(traj, inputs)
 cleanup_on_termination <- function(traj)
 {
   traj |> 
-  release("time_in_model")
+  release("time_in_model") |>
+  branch( 
+    function() get_attribute(env, "State")+1,
+      continue = rep(TRUE, 3),
+      trajectory() |> release("healthy"),
+      trajectory() |> release("sick1"), # Leaving sick1 state on termination
+      trajectory()      # Future Sick2 state
+  )
 }
 
 terminate_simulation <- function(traj, inputs)
@@ -54,26 +63,6 @@ terminate_simulation <- function(traj, inputs)
         )
 }
 
-
-# ,
-#     list(name          = "Healthy to Sick1",
-#        attr          = "aHealthyToSick1",
-#        time_to_event = function(inputs) inputs$healthy_to_sick1,
-#        func          = healthy_to_sick1,
-#        reactive      = (TRUE)
-#        ),
-#     list(name          = "Sick1 to Sick2",
-#          attr          = "aSick1ToSick2",
-#          time_to_event = function(inputs) inputs$sick1_to_sick2,
-#          func          = sick1_to_sick2,
-#          reactive      = (TRUE)
-#          ),
-#     list(name          = "Sick2 to Death",
-#             attr          = "aSick2ToDeath",
-#             time_to_event = function(inputs) inputs$sick2_to_death,
-#             func          = sick2_to_death,
-#             reactive      = (TRUE)
-#             )
 
 # Main Event registry
 event_registry <- list(
@@ -87,7 +76,19 @@ event_registry <- list(
        time_to_event = function(inputs) years_till_death(inputs),
        func          = death,
        reactive      = (TRUE)
-       )
+       ),
+  list(name          = "Sick1",
+       attr          = "aSick1",
+       time_to_event = years_till_sick1, # why not "function(inputs) years_till_sick1(inputs)"?
+       func          = sick1,
+       reactive      = (TRUE)
+       ),
+  list(name          = "Healthy",
+       attr          = "aHealthy",
+       time_to_event = years_till_healthy,
+       func          = healthy,
+       reactive      = (TRUE)
+       )    
 )
        
 
@@ -96,17 +97,17 @@ cost_arrivals <- function(arrivals, inputs)
   arrivals$cost  <- 0  # No costs yet
   arrivals$dcost <- 0  # No discounted costs either
   
-  selector <- arrivals$resource == 'time_in_model'
-  arrivals$cost[selector] <- 0*(arrivals$end_time[selector] - arrivals$start_time[selector])
-  arrivals$dcost[selector] <- discount_value(0, 
-                                            arrivals$start_time[selector],
-                                            arrivals$end_time[selector])
-
-  selector <- arrivals$resource == 'death'
-  arrivals$cost[selector] <- 0*(arrivals$end_time[selector] - arrivals$start_time[selector])
-  arrivals$dcost[selector] <- discount_value(0, 
-                                            arrivals$start_time[selector],
-                                            arrivals$end_time[selector])
+  selector = arrivals$resource == 'healthy' # Why not use "If else" statement between healthy and sick1 states?
+  arrivals$cost[selector] <- inputs$c.H *
+    (arrivals$end_time[selector] - arrivals$start_time[selector])
+  arrivals$dcost[selector] <- discount_value(inputs$c.H,
+    arrivals$start_time[selector], arrivals$end_time[selector])
+  
+  selector = arrivals$resource == 'sick1'
+  arrivals$cost[selector] <- inputs$c.S1 *
+    (arrivals$end_time[selector] - arrivals$start_time[selector])
+  arrivals$dcost[selector] <- discount_value(inputs$c.S1,
+    arrivals$start_time[selector], arrivals$end_time[selector])
   
   arrivals
 }
@@ -116,17 +117,24 @@ qaly_arrivals <- function(arrivals, inputs)
   arrivals$qaly  <- 0  # No qaly yet
   arrivals$dqaly <- 0  # No discounted qaly either
   
-  selector <- arrivals$resource == 'time_in_model'
-  arrivals$qaly[selector] <- arrivals$end_time[selector] - arrivals$start_time[selector]
-  arrivals$dqaly[selector] <- discount_value(1, 
-                                            arrivals$start_time[selector],
-                                            arrivals$end_time[selector])
+  selector <- arrivals$resource == 'healthy'
+  arrivals$qaly[selector] <-
+    inputs$u.H*
+     (arrivals$end_time[selector] - arrivals$start_time[selector])
+  arrivals$dqaly[selector] <- 
+      discount_value(inputs$u.H, 
+                     arrivals$start_time[selector],
+                     arrivals$end_time[selector])
+  
+  selector <- arrivals$resource == 'sick1'
+  arrivals$qaly[selector] <-
+    inputs$u.S1*
+     (arrivals$end_time[selector] - arrivals$start_time[selector])
+  arrivals$dqaly[selector] <- 
+      discount_value(inputs$u.S1, 
+                     arrivals$start_time[selector],
+                     arrivals$end_time[selector])
 
-  selector <- arrivals$resource == 'death'
-  arrivals$qaly[selector] <- arrivals$end_time[selector] - arrivals$start_time[selector]
-  arrivals$dqaly[selector] <- discount_value(1, 
-                                            arrivals$start_time[selector],
-                                            arrivals$end_time[selector])
   arrivals
 }
 
@@ -146,5 +154,17 @@ des_run <- function(inputs)
     qaly_arrivals(inputs) 
 }
 
-des_run(inputs)
+set.seed(3)
+source('model-5.R')
+results <- des_run(inputs)
+results
+individual_arrivals <- function(arrivals, individual_id) {
+    arrivals[arrivals$name == paste0("patient", individual_id), ]
+}
 
+# Example usage:
+individual_id <- 2
+individual_arrivals(results, individual_id)
+
+pn <- sample(results[results$resource=='death','name'],1)
+results[results$name == pn, ]
