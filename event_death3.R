@@ -21,20 +21,40 @@
 
 years_till_death <- function(inputs)
 {
-    rexp(1, inputs$r.HD)
+  state <- get_attribute(env, "State")
+  rate <- inputs$r.HD
+  if(state == 1) rate <- rate * inputs$hr.S1D # Deal with Sick1 Hazard Ratio
+  if(state == 2) rate <- rate * inputs$hr.S2D
+  rexp(1, rate)
 }
 
 
 years_till_healthy <- function(inputs)
-# Identifies the state and returns the time to event
 {
-  state <- get_attribute(env, "State")
-  if(state == 1) # Deal with Sick1 Hazard Ratio
-  {rexp(1, inputs$r.S1H)
-  }
-  else{
+  state <- get_attribute(env, "State") 
+  if(state == 1) # 1 => Sick 1
+  {
+    rexp(1,inputs$r.S1H)
+  } else
+  {
     inputs$horizon+1 # Past end of simulation time
   }
+}
+
+healthy <- function(traj, inputs)
+{
+  traj                      |> 
+  set_attribute("State", 0) |> # 0 => Healthy (H)
+  seize('healthy')          |>
+  release('sick1')          |>
+  branch(
+    # this branch allows for releasing 'treat' resource 
+    # for individuals who became healthy after getting treatment.
+    function() get_attribute(env, "Treat") +1,
+    continue = rep(TRUE, 2),
+    trajectory(),  # No Treatment
+    trajectory() |> release('treat')
+  )
 }
 
 # Given a trajectory, modify as needed when a secular
@@ -53,9 +73,6 @@ death <- function(traj, inputs)
       terminate_simulation()
   )
 }
-
-
-
 
 years_till_sick1 <- function(inputs)
 {
@@ -76,3 +93,4 @@ sick1 <- function(traj, inputs)
   release('healthy')        |> # Track state change for tally later
   seize('sick1')
 }
+

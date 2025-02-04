@@ -53,7 +53,7 @@ assign_events <- function(traj, inputs)
   {
     traj <- set_attribute(traj, event$attr, function()
     {
-      event$time_to_event(inputs)
+      event$time_to_event(inputs) # assigns the value of "years_till_event()" to "attr" name
     })
   })
   traj

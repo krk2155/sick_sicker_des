@@ -1,5 +1,5 @@
-# Model 5
-# Objective: Add Sick1 -> Healthy transition
+# Model 6
+# Objective: Adding Sick2
 #############################################################################
 #
 #
@@ -18,15 +18,20 @@
 source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/discount.R')
 source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/inputs.R')     # Your Model Parameters
 source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/main_loop.R')  # Boilerplate code
-source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/event_death.R')  # Death event
+source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/event_sick1.R')
+source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/event_sick2.R') 
+source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/event_death2.R') 
+source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/event_death3.R')  # Death event
   
+#library(simmer)
+
 # Resource or "Counters"
 #
 # These are used to track things that incur costs or qalys, or other
 # things of which a count might be of interest.
 # Infinite in quantity
 counters <- c(
-  "time_in_model", "death", "healthy","sick1"
+  "time_in_model", "death", "healthy","sick1", "sick2"
 )
   
 # Define starting state of patient
@@ -49,10 +54,11 @@ cleanup_on_termination <- function(traj)
     function() get_attribute(env, "State")+1,
       continue = rep(TRUE, 3),
       trajectory() |> release("healthy"),
-      trajectory() |> release("sick1"), # Leaving sick1 state on termination
-      trajectory()      # Future Sick2 state
+      trajectory() |> release("sick1"),
+      trajectory() |> release("sick2")  
   )
 }
+
 
 terminate_simulation <- function(traj, inputs)
 {
@@ -79,8 +85,14 @@ event_registry <- list(
        ),
   list(name          = "Sick1",
        attr          = "aSick1",
-       time_to_event = years_till_sick1, # why not "function(inputs) years_till_sick1(inputs)"?
+       time_to_event = years_till_sick1,
        func          = sick1,
+       reactive      = (TRUE)
+       ),
+  list(name          = "Sick2",
+       attr          = "aSick2",
+       time_to_event = years_till_sick2,
+       func          = sick2,
        reactive      = (TRUE)
        ),
   list(name          = "Healthy",
@@ -108,7 +120,13 @@ cost_arrivals <- function(arrivals, inputs)
     (arrivals$end_time[selector] - arrivals$start_time[selector])
   arrivals$dcost[selector] <- discount_value(inputs$c.S1,
     arrivals$start_time[selector], arrivals$end_time[selector])
-  
+
+  selector = arrivals$resource == 'sick2'
+  arrivals$cost[selector] <- inputs$c.S2 *
+    (arrivals$end_time[selector] - arrivals$start_time[selector])
+  arrivals$dcost[selector] <- discount_value(inputs$c.S2,
+    arrivals$start_time[selector], arrivals$end_time[selector])
+
   arrivals
 }
 
@@ -135,6 +153,15 @@ qaly_arrivals <- function(arrivals, inputs)
                      arrivals$start_time[selector],
                      arrivals$end_time[selector])
 
+  selector <- arrivals$resource == 'sick2'
+  arrivals$qaly[selector] <-
+    inputs$u.S2*
+     (arrivals$end_time[selector] - arrivals$start_time[selector])
+  arrivals$dqaly[selector] <- 
+      discount_value(inputs$u.S2, 
+                     arrivals$start_time[selector],
+                     arrivals$end_time[selector])
+
   arrivals
 }
 
@@ -156,7 +183,7 @@ des_run <- function(inputs)
 
 set.seed(4)
 results <- des_run(inputs)
-results
+
 individual_arrivals <- function(arrivals, individual_id) {
     arrivals[arrivals$name == paste0("patient", individual_id), ]
 }
@@ -165,6 +192,17 @@ individual_arrivals <- function(arrivals, individual_id) {
 individual_id <- 2
 individual_arrivals(results, individual_id)
 
-pn <- sample(results[results$resource=='death','name'],1)
-results[results$name == pn, ]
+results
 
+# install.packages("openxlsx")
+# library(openxlsx)
+# store the result in an excel spreadsheet
+write.xlsx(results, file = paste0("Model-6_results_", Sys.Date(), ".xlsx"))
+
+
+# NOTE: 20250203 -- there's something odd about the code below; returns NA.
+# set.seed(2)
+# results <- des_run(inputs)
+# pn <- results$name[results$resource == 'sick2'][1]
+# audit <- results[results$name == pn,]
+# audit[order(audit$start_time, audit$end_time),]
