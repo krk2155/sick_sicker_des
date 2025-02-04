@@ -1,4 +1,4 @@
-# Model 6
+# Model 7
 # Objective: Adding treatment
 #############################################################################
 #
@@ -19,9 +19,8 @@ source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/d
 source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/inputs.R')     # Your Model Parameters
 source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/main_loop.R')  # Boilerplate code
 source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/event_sick1.R')
-source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/event_sick2.R') 
-source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/event_death2.R') 
-source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/event_death3.R')  # Death event
+source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/event_sick2.R')  
+source('c:/Users/kimkr3/OneDrive - Vanderbilt/DES_Limited_LTSS/sick_sicker_des/event_death4.R')  # Death event
   
 #library(simmer)
 
@@ -213,14 +212,18 @@ inputs$strategy <- 'treat'
 results <- des_run(inputs)
 
 results
+get_mon_attributes(env)
 
 # store the result in an excel spreadsheet
 write.xlsx(results, file = paste0("Model-7_results_", Sys.Date(), ".xlsx"))
 
-# Example usage:
-individual_id <- 2
-individual_arrivals(results, individual_id)
 
+    individual_arrivals <- function(arrivals, individual_id) {
+        arrivals[arrivals$name == paste0("patient", individual_id), ]
+    }
+    
+    individual_id <- 2
+    individual_arrivals(results, individual_id)
 
 # Check Individual Attributes
     # individual_attributes <- function(individual_id) {
@@ -230,9 +233,7 @@ individual_arrivals(results, individual_id)
 
     # head(individual_attributes(4))
 
-    # individual_arrivals <- function(arrivals, individual_id) {
-    #     arrivals[arrivals$name == paste0("patient", individual_id), ]
-    # }
+
 
 # NOTE: 20250203 -- there's something odd about the code below; returns NA.
     # set.seed(2)

@@ -46,7 +46,15 @@ healthy <- function(traj, inputs)
   traj                      |> 
   set_attribute("State", 0) |> # 0 => Healthy (H)
   seize('healthy')          |>
-  release('sick1')         
+  release('sick1')          |>
+  branch(
+    # this branch allows for releasing 'treat' resource 
+    # for individuals who became healthy after getting treatment.
+    function() get_attribute(env, "Treat") +1,
+    continue = rep(TRUE, 2),
+    trajectory(),  # No Treatment
+    trajectory() |> release('treat')
+  )
 }
 
 # Given a trajectory, modify as needed when a secular
